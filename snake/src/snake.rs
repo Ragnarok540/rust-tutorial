@@ -53,7 +53,7 @@ impl Snake {
             y
         });
         Snake {
-            direction:Direction::Right,
+            direction: Direction::Right,
             body,
             tail: None,
         }

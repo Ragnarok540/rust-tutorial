@@ -32,5 +32,4 @@ fn main() {
             game.update(arg.dt);
         });
     }
-
 }
