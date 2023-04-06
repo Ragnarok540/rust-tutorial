@@ -32,6 +32,8 @@ pub struct GameboardViewSettings {
     pub selected_cell_background_color: Color,
     /// Text color.
     pub text_color: Color,
+    /// Selected cell background color.
+    pub loaded_cell_background_color: Color,
 }
 
 impl GameboardViewSettings {
@@ -50,6 +52,7 @@ impl GameboardViewSettings {
             cell_edge_radius: 1.0,
             selected_cell_background_color: [0.9, 0.9, 1.0, 1.0],
             text_color: [0.0, 0.0, 0.1, 1.0],
+            loaded_cell_background_color: [1.0, 1.0, 1.0, 1.0],
         }
     }
 }
@@ -94,16 +97,19 @@ impl GameboardView {
             g,
         );
 
-        // Draw selected cell background.
-        if let Some(ind) = controller.selected_cell {
-            let cell_size = settings.size / 9.0;
-            let pos = [ind[0] as f64 * cell_size, ind[1] as f64 * cell_size];
-            let cell_rect = [
-                settings.position[0] + pos[0], settings.position[1] + pos[1],
-                cell_size, cell_size
-            ];
-            Rectangle::new(settings.selected_cell_background_color)
-                .draw(cell_rect, &c.draw_state, c.transform, g);
+        // Draw loaded cell background
+        for i in 0..9 {
+            for j in 0..9 {
+                if controller.gameboard.cells[i][j].loaded {
+                    Self::color_cell(
+                        settings,
+                        [j, i],
+                        settings.loaded_cell_background_color,
+                        c,
+                        g,
+                    );
+                }
+            }
         }
 
         // Declare the format for cell and section lines.
@@ -145,15 +151,13 @@ impl GameboardView {
 
         // Draw selected cell background.
         if let Some(ind) = controller.selected_cell {
-            let cell_size = settings.size / 9.0;
-            let pos = [ind[0] as f64 * cell_size, ind[1] as f64 * cell_size];
-            let cell_rect = [
-                settings.position[0] + pos[0], settings.position[1] + pos[1],
-                cell_size, cell_size
-            ];
-            Rectangle::new(settings.selected_cell_background_color)
-                .draw(cell_rect, &c.draw_state, c.transform, g);
-        }
+            let color = if !controller.gameboard.cells[ind[1]][ind[0]].loaded {
+                settings.selected_cell_background_color
+            } else {
+                settings.loaded_cell_background_color
+            };
+            Self::color_cell(settings, ind, color, c, g);
+        };
 
         // Draw characters.
         let text_image = Image::new_color(settings.text_color);
@@ -182,5 +186,28 @@ impl GameboardView {
                 }
             }
         }
+
     }
+
+    /// Color an individual cell in the grid.
+    fn color_cell<G: Graphics>(
+        settings: &GameboardViewSettings,
+        ind: [usize; 2],
+        color: [f32; 4],
+        c: &Context,
+        g: &mut G,
+    ) {
+        use graphics::Rectangle;
+
+        let cell_size = settings.size / 9.0;
+        let pos = [ind[0] as f64 * cell_size, ind[1] as f64 * cell_size];
+        let cell_rect = [
+            settings.position[0] + pos[0],
+            settings.position[1] + pos[1],
+            cell_size,
+            cell_size,
+        ];
+        Rectangle::new(color).draw(cell_rect, &c.draw_state, c.transform, g);
+    }
+
 }
