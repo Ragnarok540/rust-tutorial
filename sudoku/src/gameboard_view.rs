@@ -34,6 +34,12 @@ pub struct GameboardViewSettings {
     pub text_color: Color,
     /// Selected cell background color.
     pub loaded_cell_background_color: Color,
+    /// Invalid cell background color.
+    pub invalid_cell_background_color: Color,
+    /// Invalid selected cell background color.
+    pub invalid_selected_cell_background_color: Color,
+    /// Completed game background color
+    pub completed_background_color: Color,
 }
 
 impl GameboardViewSettings {
@@ -53,6 +59,9 @@ impl GameboardViewSettings {
             selected_cell_background_color: [0.9, 0.9, 1.0, 1.0],
             text_color: [0.0, 0.0, 0.1, 1.0],
             loaded_cell_background_color: [1.0, 1.0, 1.0, 1.0],
+            invalid_cell_background_color: [1.0, 0.0, 0.0, 1.0],
+            invalid_selected_cell_background_color: [1.0, 0.0, 0.5, 1.0],
+            completed_background_color: [0.0, 1.0, 0.0, 1.0],
         }
     }
 }
@@ -97,19 +106,58 @@ impl GameboardView {
             g,
         );
 
-        // Draw loaded cell background
-        for i in 0..9 {
-            for j in 0..9 {
-                if controller.gameboard.cells[i][j].loaded {
-                    Self::color_cell(
-                        settings,
-                        [j, i],
-                        settings.loaded_cell_background_color,
-                        c,
-                        g,
-                    );
+        // Draw board background.
+        if controller.gameboard.completed {
+            Rectangle::new(settings.completed_background_color).draw(
+                board_rect,
+                &c.draw_state,
+                c.transform,
+                g,
+            );
+        } else {
+            Rectangle::new(settings.background_color).draw(
+                board_rect,
+                &c.draw_state,
+                c.transform,
+                g,
+            );
+            // Draw loaded and invalid cell backgrounds
+            for i in 0..9 {
+                for j in 0..9 {
+                    if controller.gameboard.cells[i][j].loaded {
+                        Self::color_cell(
+                            settings,
+                            [j, i],
+                            settings.loaded_cell_background_color,
+                            c,
+                            g,
+                        );
+                    } else if controller.gameboard.cells[i][j].invalid {
+                        Self::color_cell(
+                            settings,
+                            [j, i],
+                            settings.invalid_cell_background_color,
+                            c,
+                            g,
+                        );
+                    }
                 }
             }
+
+            // Draw selected cell background.
+            if let Some(ind) = controller.selected_cell {
+                let cell = controller.gameboard.cells[ind[1]][ind[0]];
+                let color = if !cell.loaded {
+                    if !cell.invalid {
+                        settings.selected_cell_background_color
+                    } else {
+                        settings.invalid_selected_cell_background_color
+                    }
+                } else {
+                    settings.loaded_cell_background_color
+                };
+                Self::color_cell(settings, ind, color, c, g);
+            };
         }
 
         // Declare the format for cell and section lines.
@@ -148,16 +196,6 @@ impl GameboardView {
             settings.board_edge_radius,
         )
         .draw(board_rect, &c.draw_state, c.transform, g);
-
-        // Draw selected cell background.
-        if let Some(ind) = controller.selected_cell {
-            let color = if !controller.gameboard.cells[ind[1]][ind[0]].loaded {
-                settings.selected_cell_background_color
-            } else {
-                settings.loaded_cell_background_color
-            };
-            Self::color_cell(settings, ind, color, c, g);
-        };
 
         // Draw characters.
         let text_image = Image::new_color(settings.text_color);

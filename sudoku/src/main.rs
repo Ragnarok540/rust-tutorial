@@ -25,7 +25,8 @@ fn main() {
     let mut events = Events::new(EventSettings::new()).lazy(true);
     let mut gl = GlGraphics::new(opengl);
 
-    let gameboard = Gameboard::load_sdm("static/puzzle.sdm"); //Gameboard::new();
+    //let gameboard = Gameboard::load_sdm("static/puzzle.sdm"); //Gameboard::new();
+    let gameboard = Gameboard::load_sdm("static/puzzle2.sdm"); //Gameboard::new();
     let mut gameboard_controller = GameboardController::new(gameboard);
     let gameboard_view_settings = GameboardViewSettings::new();
     let gameboard_view = GameboardView::new(gameboard_view_settings);

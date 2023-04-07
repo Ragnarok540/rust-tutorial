@@ -8,8 +8,9 @@ const SIZE: usize = 9;
 /// Stores information for a single `Gameboard` cell
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Cell {
-    value: u8,
+    pub value: u8,
     pub loaded: bool,
+    pub invalid: bool,
 }
 
 /// Stores game board information.
@@ -18,6 +19,8 @@ pub struct Gameboard {
     /// Stores the content of the cells.
     /// `0` is an empty cell.
     pub cells: [[Cell; SIZE]; SIZE],
+    /// Board completed.
+    pub completed: bool,
 }
 
 impl Gameboard {
@@ -25,6 +28,7 @@ impl Gameboard {
     pub fn new() -> Gameboard {
         Gameboard {
             cells: [[Cell::default(); SIZE]; SIZE],
+            completed: false,
         }
     }
  
@@ -47,8 +51,16 @@ impl Gameboard {
     /// Set cell value.
     pub fn set(&mut self, ind: [usize; 2], val: u8) {
         if !self.cells[ind[1]][ind[0]].loaded {
+            self.validate(ind, val);
             self.cells[ind[1]][ind[0]].value = val;
         }
+
+        // check for puzzle completion
+        self.completed = self
+            .cells
+            .iter()
+            .flatten()
+            .all(|cell| !cell.invalid && cell.value != 0);
     }
 
     /// Load a new game board from the SDM file in `filename`
@@ -66,10 +78,11 @@ impl Gameboard {
             cells[row][col] = Cell {
                 value,
                 loaded: value != 0,
+                invalid: false
             };
             col += 1;
         }
-        Self { cells }
+        Self { cells, completed: false }
     }
 
     /// Convenience function from_cells to avoid having to wrap each element of the array in a Cell
@@ -80,10 +93,50 @@ impl Gameboard {
                 ret.cells[i][j] = Cell {
                     value: col,
                     loaded: col != 0,
+                    invalid: false
                 };
             }
         }
         ret
+    }
+
+    /// validate the `val` to be put into `ind`
+    fn validate(&mut self, ind: [usize; 2], val: u8) {
+        let [b, a] = ind;
+        // check row
+        for i in 0..SIZE {
+            if i == a {
+                continue;
+            }
+            if self.cells[a][i].value == val {
+                self.cells[a][b].invalid = true;
+                return;
+            }
+        }
+        // check col
+        for i in 0..SIZE {
+            if i == b {
+                continue;
+            }
+            if self.cells[i][b].value == val {
+                self.cells[a][b].invalid = true;
+                return;
+            }
+        }
+        // check box
+        let (row, col) = (a / 3, b / 3);
+        for i in 3 * row..3 * row + 3 {
+            for j in 3 * col..3 * col + 3 {
+                if i == a && j == b {
+                    continue;
+                }
+                if self.cells[i][j].value == val {
+            self.cells[a][b].invalid = true;
+                    return;
+                }
+            }
+        }
+        self.cells[a][b].invalid = false;
     }
 
 }
